@@ -1,6 +1,6 @@
 # todd  
 A Todo utility able to scan all files and subfolders  
-in the current directory and report all `TODO: `s  
+in the current directory and report all TODO:'s  
 
 ## Compilation
 the makefile will compile todd.c and move it into the  

@@ -1,3 +1,3 @@
 default:
-	gcc todd.c -o todd
+	gcc todd.c -g -o todd
 	sudo mv todd /usr/local/bin
