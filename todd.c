@@ -1,5 +1,6 @@
 // TODO: Hello from todd.c
 // here is a `code snippet` for you
+// can yo `Snitch` do that?
 #include <dirent.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,11 +15,6 @@
 #define ANSI_BOLD "1"
 #define ANSI_UNDERLINED "4"
 #define ANSI_ESCAPE "\e["
-#define ANSI_BELL "\07"
-#define ANSI_ENDCODE "m"
-#define ANSI_ERASE_VISIBLE_SCREEN ANSI_ESCAPE "2J"
-#define ANSI_ERASE_CACHED_SCREEN ANSI_ESCAPE "3J"
-#define ANSI_ERASE_WHOLE_SCREEN ANSI_ERASE_VISIBLE_SCREEN ANSI_ERASE_CACHED_SCREEN
 #define ANSI_BLACK_COLOR	"30"
 #define ANSI_RED_COLOR	"31"
 #define ANSI_GREEN_COLOR	"32"
@@ -29,15 +25,7 @@
 #define ANSI_WHYTE_COLOR	"37"
 #define ANSI_DEFAULT_COLOR	"39"
 
-#define ANSI_BG_BLACK_COLOR	"40"
-#define ANSI_BG_RED_COLOR	"41"
-#define ANSI_BG_GREEN_COLOR	"42"
-#define ANSI_BG_YELLOW_COLOR	"43"
-#define ANSI_BG_BLUE_COLOR	"44"
-#define ANSI_BG_MAGENTA_COLOR	"45"
-#define ANSI_BG_CYAN_COLOR	"46"
-#define ANSI_BG_WHYTE_COLOR	"47"
-#define ANSI_BG_DEFAULT_COLOR	"49"
+
 #define CODE_BLOCK "\e[48;5;235;38;5;253m"
 #define ANSI_RESET_COLOR	"\e[0m"
 
@@ -52,15 +40,6 @@
 #define TEXT_MAGENTA(text) ANSI_ESCAPE ANSI_MAGENTA_COLOR "m" text ANSI_RESET_COLOR
 #define TEXT_CYAN(text) ANSI_ESCAPE ANSI_CYAN_COLOR "m" text ANSI_RESET_COLOR
 #define TEXT_WHYTE(text) ANSI_ESCAPE ANSI_WHYTE_COLOR "m" text ANSI_RESET_COLOR
-
-#define BG_BLACK(text) ANSI_ESCAPE ANSI_BG_BLACK_COLOR "m" text ANSI_RESET_COLOR
-#define BG_RED(text) ANSI_ESCAPE ANSI_BG_RED_COLOR "m" text ANSI_RESET_COLOR
-#define BG_GREEN(text) ANSI_ESCAPE ANSI_BG_GREEN_COLOR "m" text ANSI_RESET_COLOR
-#define BG_YELLOW(text) ANSI_ESCAPE ANSI_BG_YELLOW_COLOR "m" text ANSI_RESET_COLOR
-#define BG_BLUE(text) ANSI_ESCAPE ANSI_BG_BLUE_COLOR "m" text ANSI_RESET_COLOR
-#define BG_MAGENTA(text) ANSI_ESCAPE ANSI_BG_MAGENTA_COLOR "m" text ANSI_RESET_COLOR
-#define BG_CYAN(text) ANSI_ESCAPE ANSI_BG_CYAN_COLOR "m" text ANSI_RESET_COLOR
-#define BG_WHYTE(text) ANSI_ESCAPE ANSI_BG_WHYTE_COLOR "m" text ANSI_RESET_COLOR
 
 typedef struct file{
     char* contents;
@@ -213,6 +192,6 @@ void list_files(char *path) {
 
 int main() {
     char* path = calloc(512, 1);
-    list_files("/home/emanuele/Documenti/GitHub/C/todd/"); 
+    list_files("./"); 
     return 0;
 }
