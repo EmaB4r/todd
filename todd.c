@@ -1,17 +1,9 @@
-// TODO: Hello from todd.c
-// here is a `code snippet` for you
-// can yo `Snitch` do that?
 #include <dirent.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <threads.h>
-#define DEBUG
-#ifdef DEBUG
-#define  deb printf("HERE\n");
-#endif
-
+#include <sys/stat.h>
 #define ANSI_BOLD "1"
 #define ANSI_UNDERLINED "4"
 #define ANSI_ESCAPE "\e["
@@ -24,7 +16,6 @@
 #define ANSI_CYAN_COLOR	"36"
 #define ANSI_WHYTE_COLOR	"37"
 #define ANSI_DEFAULT_COLOR	"39"
-
 
 #define CODE_BLOCK "\e[48;5;235;38;5;253m"
 #define ANSI_RESET_COLOR	"\e[0m"
@@ -44,13 +35,13 @@
 typedef struct file{
     char* contents;
     uint64_t fp;
-    char name[100];
-    char current_word[100];
-    char previous_word[100];
+    char path[1024*4];
+    char name[256];         
+    char current_word[256]; 
+    char previous_word[256];
     int current_line;
     int newline;
-}file_t;
-
+} file_t;
 
 #define is_blank(x) (x == ' ' || x == '\n' || x == '\t')
 #define is_alnum(x) (x!='`' && x!='\0')
@@ -61,7 +52,7 @@ void parser_skip_blanks(file_t * file){
             file->current_line++;
             file->newline=1;
         }
-        file->fp ++;
+        file->fp++;
     }
 }
 int parser_advance(file_t * file){
@@ -69,62 +60,72 @@ int parser_advance(file_t * file){
     parser_skip_blanks(file);
     if (file->contents[file->fp]=='\0') return 0;
     if (file->contents[file->fp]=='`') {
-        file->current_word[i]=file->contents[file->fp];
+        file->current_word[0] = '`';
+        file->current_word[1] = '\0';
         file->fp++;
-        i++;
-        file->current_word[i]=0;
         return 1;
     }
-    strcpy(file->previous_word, file->current_word);
-    while(!is_blank(file->contents[file->fp]) && is_alnum(file->contents[file->fp])){
+    strncpy(file->previous_word, file->current_word, sizeof(file->previous_word)-1);
+    file->previous_word[sizeof(file->previous_word)-1] = '\0';
+    while(i < (int)sizeof(file->current_word)-1 && 
+          !is_blank(file->contents[file->fp]) && 
+          is_alnum(file->contents[file->fp])){
         file->current_word[i]=file->contents[file->fp];
         file->fp++;
         i++;
     }
-    file->current_word[i]=0;
+    file->current_word[i]='\0';
     return 1;
 }
 
-char* new_path(char*str1, char*str2){
-    char* buf = malloc(1024);
-    char* buf_p=buf;
-    while(*str1!='\0'){*buf=*str1; buf++, str1++;}
-    *buf='/';
-    buf++;
-    while(*str2!='\0'){*buf=*str2; buf++, str2++;}
-    *buf=0;
-    return buf_p;
+char* new_path(const char* str1, const char* str2){
+    size_t len = strlen(str1) + strlen(str2) + 2;
+    char* buf = malloc(len);
+    snprintf(buf, len, "%s/%s", str1, str2);
+    return buf;
 }
 
-// TODO: implement possibility to add colors for urgency
-// RED[THIS IS IMPORTAAAANT]
-// GREEN[not important if not done]
 void print_todo(file_t * file){
     int stop=0, nl_used=0;
     int code_mode=0;
-    char todo_prefix[64]={0};
+    char todo_prefix[256] = {0};
+    
+    strncpy(todo_prefix, file->previous_word, sizeof(todo_prefix)-1);
+    todo_prefix[sizeof(todo_prefix)-1] = '\0';
+    printf("|%s:%d\n", file->path, file->current_line);
     putc('|', stdout);
-    strcpy(todo_prefix, file->previous_word);
     parser_advance(file);
     while(!stop){
         switch (file->current_word[0]) {
-            case '`': {
-                if(!code_mode){fputs(CODE_BLOCK" ", stdout); code_mode=1;}
-                else{fputs(ANSI_RESET_COLOR" ", stdout); code_mode=0;}
-            } break;
+            case '`': 
+                if(!code_mode){
+                    fputs(CODE_BLOCK" ", stdout); 
+                    code_mode=1;
+                } else {
+                    fputs(ANSI_RESET_COLOR" ", stdout); 
+                    code_mode=0;
+                }
+                break;
             default:
-                if (nl_used){putc('|', stdout); nl_used=0;}
+                if (nl_used){
+                    putc('|', stdout); 
+                    nl_used=0;
+                }
                 printf("%s ", file->current_word);
-            break;
+                break;
         }
         stop = !parser_advance(file);
         if(file->newline){
             nl_used=1;
-            puts(ANSI_RESET_COLOR);
-            if(strcmp(todo_prefix, file->current_word)) stop = 1;
-            else parser_advance(file);
+            if(code_mode) fputs(ANSI_RESET_COLOR, stdout);
+            putchar('\n');
+            if(strcmp(todo_prefix, file->current_word)) 
+                stop = 1;
+            else 
+                parser_advance(file);
         }
     }
+    if(code_mode) fputs(ANSI_RESET_COLOR, stdout);
     if(!nl_used) putc('\n', stdout);
 }
 
@@ -144,54 +145,65 @@ void find_todo(file_t * file){
     }
 }
 
-void cat(char*path, char*filename){
-    file_t file={.current_line=0, .fp=0};
-    strcpy(file.name, filename);
+void cat(const char* path, const char* filename){
+    file_t file = {0};
+    file.current_line = 1;
     
-    FILE*fin=fopen(path, "r");
-    if (fin==NULL) return;
+    strncpy(file.name, filename, sizeof(file.name)-1);
+    file.name[sizeof(file.name)-1] = '\0';
+    strncpy(file.path, path, sizeof(file.path)-1);
+    file.path[sizeof(file.path)-1] = '\0';
+    
+    FILE* fin = fopen(path, "r");
+    if (!fin) return;
+    
     fseek(fin, 0, SEEK_END);
-    size_t fsize=ftell(fin);
-    if(!fsize) return;
-    char* str = malloc(fsize+1);
+    long fsize = ftell(fin);
+    if(fsize <= 0) {
+        fclose(fin);
+        return;
+    }
     fseek(fin, 0, SEEK_SET);
-    fread(str, 1, fsize, fin);
-    str[fsize]='\0';
-    file.contents=str;
+    
+    char* str = malloc(fsize+1);
+    if(!str) {
+        fclose(fin);
+        return;
+    }
+    
+    size_t nread = fread(str, 1, fsize, fin);
+    str[nread] = '\0';
+    file.contents = str;
     
     find_todo(&file);
     fclose(fin);
     free(str);
 }
 
-void list_files(char *path) {
+void list_files(const char *base_path) {
+    DIR *dir = opendir(base_path);
+    if (!dir) return;
+
     struct dirent *entry;
-    DIR *dir = opendir(path);
-    if (dir == NULL) return;
-    while ((entry = readdir(dir)) != NULL) {
-        if(entry->d_type==8 && entry->d_name[0]!='.') {
-            char* str = new_path(path, entry->d_name);
-            cat(str, entry->d_name);
-            free(str);
+    while ((entry = readdir(dir))) {
+        if (entry->d_name[0] == '.') continue; 
+
+        char *full_path = new_path(base_path, entry->d_name);
+        struct stat path_stat;
+        stat(full_path, &path_stat);
+
+        if (S_ISREG(path_stat.st_mode)) {
+            cat(full_path, entry->d_name);
+        } 
+        else if (S_ISDIR(path_stat.st_mode)) {
+            list_files(full_path); 
         }
-    }
-    
-    seekdir(dir, SEEK_SET);
-    
-    if (dir == NULL) return;
-    while ((entry = readdir(dir)) != NULL) {
-        if(entry->d_type==4 && entry->d_name[0]!='.'){
-            char*newpath=new_path(path, entry->d_name);
-            list_files(newpath);
-            free(newpath);
-        }
+        free(full_path);
     }
     closedir(dir);
 }
 
-
 int main() {
-    char* path = calloc(512, 1);
-    list_files("./"); 
+    list_files(".");
     return 0;
 }
