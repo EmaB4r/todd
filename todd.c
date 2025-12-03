@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/stat.h>
+
+// TODO: remove all these useless defines
 #define ANSI_BOLD "1"
 #define ANSI_UNDERLINED "4"
 #define ANSI_ESCAPE "\e["
@@ -85,6 +87,8 @@ char* new_path(const char* str1, const char* str2){
     return buf;
 }
 
+
+// TODO: maybe use a struct for state tracking -> much cleaner
 void print_todo(file_t * file){
     int stop=0, nl_used=0;
     int code_mode=0;
@@ -95,6 +99,7 @@ void print_todo(file_t * file){
     printf("|%s:%d\n", file->path, file->current_line);
     putc('|', stdout);
     parser_advance(file);
+// TODO: refactor this ugly mess
     while(!stop){
         switch (file->current_word[0]) {
             case '`': 
@@ -122,8 +127,10 @@ void print_todo(file_t * file){
             putchar('\n');
             if(strcmp(todo_prefix, file->current_word)) 
                 stop = 1;
-            else 
+            else {
                 parser_advance(file);
+                if (!strcmp(file->current_word, todo_prefix)) parser_advance(file);
+            }
         }
     }
     if(code_mode) fputs(ANSI_RESET_COLOR, stdout);
