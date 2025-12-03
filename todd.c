@@ -111,7 +111,8 @@ void print_todo(file_t * file){
                     putc('|', stdout); 
                     nl_used=0;
                 }
-                printf("%s ", file->current_word);
+                fputs(file->current_word, stdout);
+                putc(' ', stdout);
                 break;
         }
         stop = !parser_advance(file);
