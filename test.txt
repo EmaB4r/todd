@@ -1,4 +1,8 @@
 // TODO: comment using //
 # TODO: comment using #
 -- TODO: comment using --
-// TODO: this is a `code snipped`
+// TODO: this is a `code snippet`
+% TODO: this is a 
+% multiline comment
+%
+% tho
