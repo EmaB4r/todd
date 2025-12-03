@@ -87,54 +87,56 @@ char* new_path(const char* str1, const char* str2){
     return buf;
 }
 
-
+typedef struct print_state{
+    int stop;
+    int nl_used;
+    int code_mode;
+    char prefix[256];
+}print_state_t;
 // TODO: maybe use a struct for state tracking -> much cleaner
 void print_todo(file_t * file){
-    int stop=0, nl_used=0;
-    int code_mode=0;
-    char todo_prefix[256] = {0};
+    print_state_t state = {0};
     
-    strncpy(todo_prefix, file->previous_word, sizeof(todo_prefix)-1);
-    todo_prefix[sizeof(todo_prefix)-1] = '\0';
+    strncpy(state.prefix, file->previous_word, sizeof(state.prefix)-1);
+    state.prefix[sizeof(state.prefix)-1] = '\0';
     printf("|%s:%d\n", file->path, file->current_line);
     putc('|', stdout);
     parser_advance(file);
-// TODO: refactor this ugly mess
-    while(!stop){
+    while(!state.stop){
         switch (file->current_word[0]) {
             case '`': 
-                if(!code_mode){
+                if(!state.code_mode){
                     fputs(CODE_BLOCK" ", stdout); 
-                    code_mode=1;
+                    state.code_mode=1;
                 } else {
                     fputs(ANSI_RESET_COLOR" ", stdout); 
-                    code_mode=0;
+                    state.code_mode=0;
                 }
                 break;
             default:
-                if (nl_used){
+                if (state.nl_used){
                     putc('|', stdout); 
-                    nl_used=0;
+                    state.nl_used=0;
                 }
                 fputs(file->current_word, stdout);
                 putc(' ', stdout);
                 break;
         }
-        stop = !parser_advance(file);
+        state.stop = !parser_advance(file);
         if(file->newline){
-            nl_used=1;
-            if(code_mode) fputs(ANSI_RESET_COLOR, stdout);
+            state.nl_used=1;
+            if(state.code_mode) fputs(ANSI_RESET_COLOR, stdout);
             putchar('\n');
-            if(strcmp(todo_prefix, file->current_word)) 
-                stop = 1;
+            if(strcmp(state.prefix, file->current_word)) 
+                state.stop = 1;
             else {
                 parser_advance(file);
-                if (!strcmp(file->current_word, todo_prefix)) parser_advance(file);
+                if (!strcmp(file->current_word, state.prefix)) parser_advance(file);
             }
         }
     }
-    if(code_mode) fputs(ANSI_RESET_COLOR, stdout);
-    if(!nl_used) putc('\n', stdout);
+    if(state.code_mode) fputs(ANSI_RESET_COLOR, stdout);
+    if(!state.nl_used) putc('\n', stdout);
 }
 
 void find_todo(file_t * file){
